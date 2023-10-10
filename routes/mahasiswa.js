@@ -8,15 +8,25 @@ const { body, validationResult } = require("express-validator");
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/img')
+    cb(null, "public/img");
   },
   filename: (req, file, cb) => {
-    console.log(file)
-    cb(null, Date.now() + path.extname(file.originalname))
-  }
-})
-const upload = multer({storage: storage})
+    console.log(file);
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
 
+
+const fileFilter = (req, file, cb) => {
+  // mengecek jenis file yang diizinkan(misalnya, hanya jpg dan png)
+  if (file.mimetype === "img/jpg" || file.mimetype === "img/png" || file.mimetype === "img/pdf") {
+    cb(null, true);
+  } else {
+    cb(new Error("jenis file tidak diizinkan"), false);
+  }
+};
+
+const upload = multer({ storage: storage, fileFilter: fileFilter });
 const connection = require("../config/db");
 
 router.get("/", function (req, res) {
@@ -30,7 +40,8 @@ router.get("/", function (req, res) {
 });
 
 router.post(
-  "/store",upload.single("gambar"),
+  "/store",
+  upload.single("gambar"),
   [
     body("nama").notEmpty(),
     body("nrp").notEmpty(),
@@ -47,7 +58,7 @@ router.post(
       nama: req.body.nama,
       nrp: req.body.nrp,
       id_jurusan: req.body.id_jurusan,
-      gambar: req.file.filename
+      gambar: req.file.filename,
     };
     connection.query("INSERT INTO mahasiswa SET ?", Data, function (err, rows) {
       if (err) {
@@ -91,7 +102,8 @@ router.get("/(:id)", function (req, res) {
 });
 
 router.patch(
-  "/update/:id", upload.single("gambar"),
+  "/update/:id",
+  upload.single("gambar"),
   [
     body("nama").notEmpty(),
     body("nrp").notEmpty(),
@@ -111,20 +123,20 @@ router.patch(
       if (err) {
         return res.status(500).json({
           status: false,
-          message: 'Server Error'
+          message: "Server Error",
         });
       }
       if (rows.length === 0) {
         return res.status(404).json({
           status: false,
-          message: 'Not Found'
+          message: "Not Found",
         });
       }
       const namaFileLama = rows[0].gambar;
 
       // Hapus file lama jika ada
       if (namaFileLama && gambar) {
-        const pathFileLama = path.join(__dirname, '../public/img', namaFileLama);
+        const pathFileLama = path.join(__dirname, "../public/img", namaFileLama);
         fs.unlinkSync(pathFileLama);
       }
 
@@ -132,7 +144,7 @@ router.patch(
         nama: req.body.nama,
         nrp: req.body.nrp,
         id_jurusan: req.body.id_jurusan, // Menambahkan id_jurusan (foreign key)
-        gambar: gambar
+        gambar: gambar,
       };
 
       connection.query(`UPDATE mahasiswa SET ? WHERE id_m = ${id}`, Data, function (err, rows) {
@@ -152,45 +164,43 @@ router.patch(
   }
 );
 
-
-router.delete('/delete/:id', (req, res) => {
+router.delete("/delete/:id", (req, res) => {
   let id = req.params.id;
 
   connection.query(`SELECT * FROM mahasiswa WHERE id_m = ${id}`, (err, rows) => {
     if (err) {
       return res.status(500).json({
         status: false,
-        message: 'Server Error'
+        message: "Server Error",
       });
     }
     if (rows.length === 0) {
       return res.status(404).json({
         status: false,
-        message: 'Data Not Found'
+        message: "Data Not Found",
       });
     }
     const namaFileLama = rows[0].gambar;
-    
+
     // Hapus file gambar jika ada
     if (namaFileLama) {
-      const pathFileLama = path.join(__dirname, '../public/img', namaFileLama);
+      const pathFileLama = path.join(__dirname, "../public/img", namaFileLama);
       fs.unlinkSync(pathFileLama);
     }
     connection.query(`DELETE FROM mahasiswa WHERE id_m = ${id}`, (err, rows) => {
       if (err) {
         return res.status(500).json({
           status: false,
-          message: 'Server Error'
+          message: "Server Error",
         });
       } else {
         return res.status(200).json({
           status: true,
-          message: 'Data Berhasil Dihapus!'
+          message: "Data Berhasil Dihapus!",
         });
       }
     });
   });
 });
-
 
 module.exports = router;
