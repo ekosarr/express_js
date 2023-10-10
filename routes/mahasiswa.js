@@ -153,21 +153,44 @@ router.patch(
 );
 
 
-router.delete("/delete/(:id)", function (req, res) {
+router.delete('/delete/:id', (req, res) => {
   let id = req.params.id;
-  connection.query(`delete from mahasiswa where id_m = ${id}`, function (err, rows) {
+
+  connection.query(`SELECT * FROM mahasiswa WHERE id_m = ${id}`, (err, rows) => {
     if (err) {
       return res.status(500).json({
         status: false,
-        message: "server error",
-      });
-    } else {
-      return res.status(200).json({
-        status: true,
-        message: "data telah dihapus",
+        message: 'Server Error'
       });
     }
+    if (rows.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: 'Data Not Found'
+      });
+    }
+    const namaFileLama = rows[0].gambar;
+    
+    // Hapus file gambar jika ada
+    if (namaFileLama) {
+      const pathFileLama = path.join(__dirname, '../public/img', namaFileLama);
+      fs.unlinkSync(pathFileLama);
+    }
+    connection.query(`DELETE FROM mahasiswa WHERE id_m = ${id}`, (err, rows) => {
+      if (err) {
+        return res.status(500).json({
+          status: false,
+          message: 'Server Error'
+        });
+      } else {
+        return res.status(200).json({
+          status: true,
+          message: 'Data Berhasil Dihapus!'
+        });
+      }
+    });
   });
 });
+
 
 module.exports = router;
