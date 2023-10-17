@@ -18,13 +18,14 @@ const storage = multer.diskStorage({
 
 
 const fileFilter = (req, file, cb) => {
-  // mengecek jenis file yang diizinkan(misalnya, hanya jpg dan png)
-  if (file.mimetype === "img/jpg" || file.mimetype === "img/png" || file.mimetype === "img/pdf") {
+  // mengecek jenis file yang diizinkan (jpg, png, dan pdf)
+  if (file.mimetype === "image/jpeg" || file.mimetype === "image/png" || file.mimetype === "application/pdf") {
     cb(null, true);
   } else {
-    cb(new Error("jenis file tidak diizinkan"), false);
+    cb(new Error("Jenis file tidak diizinkan"), false);
   }
 };
+
 
 const upload = multer({ storage: storage, fileFilter: fileFilter });
 const connection = require("../config/db");
@@ -41,7 +42,7 @@ router.get("/", function (req, res) {
 
 router.post(
   "/store",
-  upload.single("gambar"),
+  upload.fields([{ name: 'gambar', maxCount: 1 }, { name: 'swa_foto', maxCount: 1 }]),
   [
     body("nama").notEmpty(),
     body("nrp").notEmpty(),
@@ -58,7 +59,8 @@ router.post(
       nama: req.body.nama,
       nrp: req.body.nrp,
       id_jurusan: req.body.id_jurusan,
-      gambar: req.file.filename,
+      gambar: req.files.gambar[0].filename, 
+      swa_foto: req.files.swa_foto[0].filename 
     };
     connection.query("INSERT INTO mahasiswa SET ?", Data, function (err, rows) {
       if (err) {
