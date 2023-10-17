@@ -105,7 +105,7 @@ router.get("/(:id)", function (req, res) {
 
 router.patch(
   "/update/:id",
-  upload.single("gambar"),
+  upload.fields([{ name: 'gambar', maxCount: 1 }, { name: 'swa_foto', maxCount: 1 }]),
   [
     body("nama").notEmpty(),
     body("nrp").notEmpty(),
@@ -118,8 +118,8 @@ router.patch(
         errors: errors.array(),
       });
     }
-    let id = req.params.id;
-    let gambar = req.file ? req.file.filename : null;
+
+    const id = req.params.id;
 
     connection.query(`SELECT * FROM mahasiswa WHERE id_m = ${id}`, function (err, rows) {
       if (err) {
@@ -134,12 +134,22 @@ router.patch(
           message: "Not Found",
         });
       }
-      const namaFileLama = rows[0].gambar;
+
+      const gambarLama = rows[0].gambar;
+      const swaFotoLama = rows[0].swa_foto;
+
+      const gambar = req.files['gambar'] ? req.files['gambar'][0].filename : null;
+      const swa_foto = req.files['swa_foto'] ? req.files['swa_foto'][0].filename : null;
 
       // Hapus file lama jika ada
-      if (namaFileLama && gambar) {
-        const pathFileLama = path.join(__dirname, "../public/img", namaFileLama);
-        fs.unlinkSync(pathFileLama);
+      if (gambarLama && gambar) {
+        const pathGambar = path.join(__dirname, '../public/img', gambarLama);
+        fs.unlinkSync(pathGambar);
+      }
+
+      if (swaFotoLama && swa_foto) {
+        const pathSwaFoto = path.join(__dirname, '../public/img', swaFotoLama);
+        fs.unlinkSync(pathSwaFoto);
       }
 
       let Data = {
@@ -147,6 +157,7 @@ router.patch(
         nrp: req.body.nrp,
         id_jurusan: req.body.id_jurusan, // Menambahkan id_jurusan (foreign key)
         gambar: gambar,
+        swa_foto: swa_foto,
       };
 
       connection.query(`UPDATE mahasiswa SET ? WHERE id_m = ${id}`, Data, function (err, rows) {
@@ -166,6 +177,8 @@ router.patch(
   }
 );
 
+
+
 router.delete("/delete/:id", (req, res) => {
   let id = req.params.id;
 
@@ -182,13 +195,23 @@ router.delete("/delete/:id", (req, res) => {
         message: "Data Not Found",
       });
     }
-    const namaFileLama = rows[0].gambar;
+    const gambarLama = rows[0].gambar;
+    const swa_fotoLama = rows[0].swa_foto;
 
-    // Hapus file gambar jika ada
-    if (namaFileLama) {
-      const pathFileLama = path.join(__dirname, "../public/img", namaFileLama);
-      fs.unlinkSync(pathFileLama);
+    // Hapus file lama jika ada
+    if (gambarLama) {
+      const pathGambarLama = path.join(__dirname, '../public/img', gambarLama);
+      if (fs.existsSync(pathGambarLama)) {
+        fs.unlinkSync(pathGambarLama);
+      }
     }
+    if (swa_fotoLama) {
+      const pathSwaFotoLama = path.join(__dirname, '../public/img', swa_fotoLama);
+      if (fs.existsSync(pathSwaFotoLama)) {
+        fs.unlinkSync(pathSwaFotoLama);
+      }
+    }
+
     connection.query(`DELETE FROM mahasiswa WHERE id_m = ${id}`, (err, rows) => {
       if (err) {
         return res.status(500).json({
@@ -204,5 +227,6 @@ router.delete("/delete/:id", (req, res) => {
     });
   });
 });
+
 
 module.exports = router;

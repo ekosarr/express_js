@@ -6,7 +6,9 @@ const port = 3000;
 const bodyPs = require("body-parser");
 app.use(bodyPs.urlencoded({ extended: false }));
 app.use(bodyPs.json());
+const cors = require('cors')
 
+app.use(cors())
 // import route posts
 const mhsRouter = require("./routes/mahasiswa");
 app.use("/api/mhs", mhsRouter);
